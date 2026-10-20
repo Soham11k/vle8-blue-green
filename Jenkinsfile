@@ -17,8 +17,8 @@ pipeline {
 
         stage('Deploy Green') {
             steps {
-                sh 'sudo -u ubuntu /usr/bin/kubectl apply -f deployment-green.yaml'
-                sh 'sudo -u ubuntu /usr/bin/kubectl rollout status deployment/myapp-green --timeout=180s'
+                sh 'sudo -u ubuntu /snap/bin/kubectl apply -f deployment-green.yaml'
+                sh 'sudo -u ubuntu /snap/bin/kubectl rollout status deployment/myapp-green --timeout=180s'
             }
         }
 
@@ -32,7 +32,7 @@ pipeline {
         stage('Switch Traffic') {
             steps {
                 sh '''
-                sudo -u ubuntu /usr/bin/kubectl patch service myapp-service \
+                sudo -u ubuntu /snap/bin/kubectl patch service myapp-service \
                   -p '{"spec":{"selector":{"app":"myapp","color":"green"}}}'
                 '''
             }
@@ -40,8 +40,8 @@ pipeline {
 
         stage('Verify') {
             steps {
-                sh 'sudo -u ubuntu /usr/bin/kubectl get deployments'
-                sh 'sudo -u ubuntu /usr/bin/kubectl get endpoints myapp-service'
+                sh 'sudo -u ubuntu /snap/bin/kubectl get deployments'
+                sh 'sudo -u ubuntu /snap/bin/kubectl get endpoints myapp-service'
             }
         }
     }
