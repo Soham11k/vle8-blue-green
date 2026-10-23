@@ -8,6 +8,24 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            '${scannerHome}/bin/sonar-scanner' \
+                              -Dsonar.projectKey=vle8-blue-green \
+                              -Dsonar.projectName='VLE8 Blue Green Deployment' \
+                              -Dsonar.sources=. \
+                              -Dsonar.exclusions=.git/**,**/*.yaml,**/*.yml,**/Dockerfile,**/Jenkinsfile
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Build Green') {
             steps {
                 sh 'docker build -t myapp:v2 .'
@@ -21,6 +39,12 @@ pipeline {
                 sh 'sudo -u ubuntu /snap/bin/kubectl rollout status deployment/myapp-green --timeout=180s'
             }
         }
+        stage('Ensure Service Exists') {
+            steps {
+                sh 'sudo -u ubuntu /snap/bin/kubectl apply -f service.yaml'
+            }
+        }
+
         stage('Ensure Service Exists') {
             steps {
                 sh 'sudo -u ubuntu /snap/bin/kubectl apply -f service.yaml'
