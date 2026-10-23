@@ -45,12 +45,6 @@ pipeline {
             }
         }
 
-        stage('Ensure Service Exists') {
-            steps {
-                sh 'sudo -u ubuntu /snap/bin/kubectl apply -f service.yaml'
-            }
-        }
-
         stage('Approve Switch') {
             steps {
                 input message: 'Green is ready. Switch traffic?',
