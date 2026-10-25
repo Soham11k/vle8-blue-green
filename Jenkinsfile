@@ -1,8 +1,8 @@
+```groovy
 pipeline {
     agent any
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -74,8 +74,11 @@ pipeline {
                     set -eu
 
                     echo "Checking Docker..."
-
                     docker info >/dev/null
+
+                    echo "Preparing report directory..."
+                    mkdir -p "$WORKSPACE/zap-report"
+                    chmod 777 "$WORKSPACE/zap-report"
 
                     echo "Starting Kubernetes port-forward..."
 
@@ -92,21 +95,16 @@ pipeline {
                     cleanup() {
                         kill "$PF_PID" 2>/dev/null || true
                     }
-
                     trap cleanup EXIT
 
                     echo "Waiting for application..."
 
                     READY=0
-
                     for i in $(seq 1 30); do
-                        if curl -fsS \
-                            http://127.0.0.1:18089/ \
-                            >/dev/null; then
+                        if curl -fsS http://127.0.0.1:18089/ >/dev/null; then
                             READY=1
                             break
                         fi
-
                         sleep 2
                     done
 
@@ -116,46 +114,4 @@ pipeline {
                         exit 1
                     fi
 
-                    mkdir -p "$WORKSPACE/zap-report"
-
-                    echo "Running OWASP ZAP baseline scan..."
-
-                    docker run --rm \
-                        --network host \
-                        -v "$WORKSPACE/zap-report:/zap/wrk/:rw" \
-                        ghcr.io/zaproxy/zaproxy:stable \
-                        zap-baseline.py \
-                        -t http://127.0.0.1:18089 \
-                        -m 1 \
-                        -I \
-                        -r zap-report.html
-
-                    echo "OWASP ZAP scan finished."
-                '''
-            }
-
-            post {
-                always {
-                    archiveArtifacts(
-                        artifacts: 'zap-report/zap-report.html',
-                        allowEmptyArchive: true
-                    )
-                }
-            }
-        }
-
-        stage('Verify') {
-            steps {
-                sh '''
-                    echo "Checking Kubernetes deployments..."
-
-                    sudo -u ubuntu /snap/bin/kubectl get deployments
-
-                    echo "Checking application service..."
-
-                    sudo -u ubuntu /snap/bin/kubectl get endpoints myapp-service
-                '''
-            }
-        }
-    }
-}
+                   
